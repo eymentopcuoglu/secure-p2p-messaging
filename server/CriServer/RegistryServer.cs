@@ -20,8 +20,8 @@ namespace CriServer
         private TcpListener tcpListener;
         private UdpClient udpListener;
 
-        private const int TCP_PORT = 5555;
-        private const int UDP_PORT = 5556;
+        private const int TCP_PORT = 5553;
+        private const int UDP_PORT = 5554;
         private const int ACTIVITY_TIMEOUT = 20;
 
         public RegistryServer(IUserService userService, IGroupService groupService)

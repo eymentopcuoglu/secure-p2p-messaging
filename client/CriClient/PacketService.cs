@@ -24,19 +24,23 @@ namespace CriClient
 
         const int USERNAME_MAX_LENGTH = 16;
         const int PASSWORD_MAX_LENGTH = 16;
-        const int TCP_PORT = 5555;
-        const int UDP_PORT = 5556;
+        
+        const int SERVER_TCP_PORT = 5553;
+        const int SERVER_UDP_PORT = 5554;
         const string SERVER = "169.254.212.155";
+        
+        const int CLIENT_TCP_PORT = 5555;
+        
         const int MESSAGE_MAX_LENGTH = 325;
         const int MAX_USER_COUNT = 100;
 
-        public static string SendPacket(bool isUdp, string payload, string destination = SERVER)
+        public static string SendPacket(bool isUdp, string payload, string destinationIP = SERVER, int destinationPort = SERVER_TCP_PORT)
         {
             byte[] data = Encoding.UTF8.GetBytes(payload);
 
             if (!isUdp)
             {
-                TcpClient client = new TcpClient(destination, TCP_PORT);
+                TcpClient client = new TcpClient(destinationIP, destinationPort);
                 NetworkStream stream = client.GetStream();
                 stream.Write(data, 0, data.Length);
 
@@ -54,7 +58,7 @@ namespace CriClient
             else
             {
                 UdpClient udpClient = new UdpClient();
-                udpClient.Send(data, data.Length, destination, UDP_PORT);
+                udpClient.Send(data, data.Length, destinationIP, destinationPort);
             }
 
             return "";
@@ -94,7 +98,7 @@ namespace CriClient
 
         private static void TcpListen()
         {
-            tcpListener = new TcpListener(IPAddress.Any, TCP_PORT);
+            tcpListener = new TcpListener(IPAddress.Any, CLIENT_TCP_PORT);
             tcpListener.Start();
             while (isListeningEnabled)
             {
@@ -257,7 +261,7 @@ namespace CriClient
 
         public static string ReceivePacket()
         {
-            TcpListener server = new TcpListener(IPAddress.Any, TCP_PORT);
+            TcpListener server = new TcpListener(IPAddress.Any, CLIENT_TCP_PORT);
             server.Start();
             List<byte> bytes = new List<byte>();
             string data = null;
@@ -428,7 +432,7 @@ namespace CriClient
                 string packet = ProtocolCode.Chat.ToString() + "\n" + username;
                 string destIp = Dataholder.userIPs[username];
                 Console.WriteLine("Sending P2P chat request to: {0}", destIp);
-                string answer = SendPacket(false, packet, destination: destIp);
+                string answer = SendPacket(false, packet, destinationIP: destIp);
                 string[] tokenizedanswer = answer.Split('\n');
                 if (tokenizedanswer[1] == "BUSY")
                 {
