@@ -26,7 +26,7 @@ namespace CriClient
         const int PASSWORD_MAX_LENGTH = 16;
         const int TCP_PORT = 5555;
         const int UDP_PORT = 5556;
-        const string SERVER = "172.29.91.122";
+        const string SERVER = "169.254.212.155";
         const int MESSAGE_MAX_LENGTH = 325;
         const int MAX_USER_COUNT = 100;
 
