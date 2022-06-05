@@ -1,0 +1,6 @@
+version: '3.4'
+
+services:
+  cri-postgres:
+    ports:
+     - 5432:5432

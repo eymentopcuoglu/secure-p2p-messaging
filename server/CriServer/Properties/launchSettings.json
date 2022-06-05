@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "CriServer": {
+      "commandName": "Project",
+      "commandLineArgs": "--is-standalone"
+    },
+    "Docker": {
+      "commandName": "Docker"
+    }
+  }
+}
