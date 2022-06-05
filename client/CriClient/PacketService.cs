@@ -24,13 +24,13 @@ namespace CriClient
 
         const int USERNAME_MAX_LENGTH = 16;
         const int PASSWORD_MAX_LENGTH = 16;
-        
+
         const int SERVER_TCP_PORT = 5553;
         const int SERVER_UDP_PORT = 5554;
-        const string SERVER = "169.254.212.155";
-        
+        const string SERVER = "172.27.85.107";
+
         const int CLIENT_TCP_PORT = 5555;
-        
+
         const int MESSAGE_MAX_LENGTH = 325;
         const int MAX_USER_COUNT = 100;
 
@@ -48,7 +48,7 @@ namespace CriClient
                 int i;
                 while ((i = stream.ReadByte()) != -1)
                 {
-                    bytes.Add((byte)i);
+                    bytes.Add((byte) i);
                 }
 
                 string dataRead = System.Text.Encoding.UTF8.GetString(bytes.ToArray());
@@ -77,9 +77,10 @@ namespace CriClient
             HbTimer.Dispose();
             HbTimer = null;
         }
+
         private static void HeartBeat(object sender, ElapsedEventArgs e, string username)
         {
-            SendPacket(true, ProtocolCode.Hello + "\n" + username);
+            SendPacket(true, ProtocolCode.Hello + "\n" + username, destinationPort: SERVER_UDP_PORT);
         }
 
         public static void StartTcpListen()
@@ -136,11 +137,13 @@ namespace CriClient
                             Console.WriteLine(parsedMessage[3]);
                             Console.WriteLine();
                         }
+
                         incomingStream.Close();
                         tcpPacketIncoming = false;
                     }).Start();
                 }
             }
+
             tcpListener.Stop();
             tcpListener = null;
         }
@@ -170,6 +173,7 @@ namespace CriClient
                     throw new Exception(response.MessageToUser);
                 }
             }
+
             Console.Clear();
             Console.WriteLine("---------- Chat with {0} ----------", destination);
             Console.WriteLine("--------- Type :q to exit ---------");
@@ -185,11 +189,13 @@ namespace CriClient
                         {
                             continue;
                         }
+
                         Text(Dataholder.loggedInUserName, outgoingStringBuffer.Remove(0, 2).ToString(), destinationIp);
                         if (outgoingStringBuffer.ToString() == ":q")
                         {
                             break;
                         }
+
                         outgoingStringBuffer.Clear().Append("> ");
                         Console.Write("\n> ");
                         continue;
@@ -202,12 +208,14 @@ namespace CriClient
                     {
                         outgoingStringBuffer.Append(pressedKey.KeyChar);
                     }
+
                     int currentLine = Console.CursorTop;
                     Console.SetCursorPosition(0, currentLine);
                     Console.Write(new string(' ', Console.WindowWidth));
                     Console.SetCursorPosition(0, currentLine);
                     Console.Write(outgoingStringBuffer.ToString());
                 }
+
                 if (isTextAvailable)
                 {
                     isTextAvailable = false;
@@ -215,6 +223,7 @@ namespace CriClient
                     {
                         break;
                     }
+
                     int currentLine = Console.CursorTop;
                     Console.SetCursorPosition(0, currentLine);
                     Console.Write(new string(' ', Console.WindowWidth));
@@ -223,6 +232,7 @@ namespace CriClient
                     Console.Write(outgoingStringBuffer.ToString());
                 }
             }
+
             Console.Clear();
             canAcceptChatRequest = true;
             isChatting = false;
@@ -230,11 +240,13 @@ namespace CriClient
         }
 
         private static string RespondToChatRequest(string fromIp)
-        { // TODO decouple this as this should be a UI method
+        {
+            // TODO decouple this as this should be a UI method
             if (!canAcceptChatRequest)
             {
                 return ProtocolCode.Chat + "\nBUSY";
             }
+
             char userOption = '\0';
             while (!(userOption == 'Y' || userOption == 'N'))
             {
@@ -243,10 +255,12 @@ namespace CriClient
                 {
                     Console.WriteLine("This IP was last seen online as user {0}", Dataholder.userIPs.FirstOrDefault((userIp) => userIp.Value == fromIp).Key);
                 }
+
                 Console.Write("Would you like to accept the request? (Enter, and then Y or N)");
                 userOption = char.ToUpper(Console.ReadKey().KeyChar);
                 Console.WriteLine();
             }
+
             if (userOption == 'Y')
             {
                 isChatting = true;
@@ -271,7 +285,7 @@ namespace CriClient
             int i;
             while ((i = stream.ReadByte()) != -1)
             {
-                bytes.Add((byte)i);
+                bytes.Add((byte) i);
             }
 
             data = Encoding.UTF8.GetString(bytes.ToArray());
@@ -279,7 +293,6 @@ namespace CriClient
             server.Stop();
             return data;
         }
-
 
 
         public static Response Register(string username, string password)
@@ -360,21 +373,8 @@ namespace CriClient
                 KillHeartbeat();
                 return new Response { IsSuccessful = true, MessageToUser = "Logged out. " };
             }
+
             return new Response() { IsSuccessful = false, MessageToUser = "Unknown Error" };
-
-        }
-
-        public static void Hello(string username)
-        {
-            if (username.Length <= USERNAME_MAX_LENGTH)
-            {
-                string packet = ProtocolCode.Hello + "\n" + username;
-                SendPacket(true, packet);
-            }
-            else
-            {
-                throw new Exception("username char limit exceeded");
-            }
         }
 
         public static Response Search(string username)
@@ -400,6 +400,7 @@ namespace CriClient
                 {
                     return new Response { IsSuccessful = false, MessageToUser = "User not found. " };
                 }
+
                 if (tokenizedanswer[1] == "OK")
                 {
                     if (Dataholder.userIPs.ContainsKey(username))
@@ -410,8 +411,10 @@ namespace CriClient
                     {
                         Dataholder.userIPs.Add(username, tokenizedanswer[2]);
                     }
+
                     return new Response { IsSuccessful = true, MessageToUser = "User is online. " };
                 }
+
                 return new Response() { IsSuccessful = false, MessageToUser = "Unknown Error" };
             }
             else
@@ -426,33 +429,36 @@ namespace CriClient
             {
                 throw new Exception("Username char limit exceeded");
             }
+
             Response searchanswer = Search(username);
             if (searchanswer.IsSuccessful)
             {
                 string packet = ProtocolCode.Chat.ToString() + "\n" + username;
                 string destIp = Dataholder.userIPs[username];
                 Console.WriteLine("Sending P2P chat request to: {0}", destIp);
-                string answer = SendPacket(false, packet, destinationIP: destIp);
+                string answer = SendPacket(false, packet, destIp, CLIENT_TCP_PORT);
                 string[] tokenizedanswer = answer.Split('\n');
                 if (tokenizedanswer[1] == "BUSY")
                 {
                     return new Response() { IsSuccessful = false, MessageToUser = "This user is currently busy." };
                 }
+
                 if (tokenizedanswer[1] == "REJECT")
                 {
                     return new Response() { IsSuccessful = false, MessageToUser = "The user has rejected your chat request." };
                 }
+
                 if (tokenizedanswer[1] == "OK")
                 {
                     return new Response() { IsSuccessful = true, MessageToUser = "" };
                 }
+
                 return new Response() { IsSuccessful = false, MessageToUser = "Unkown error." };
             }
             else
             {
                 return searchanswer;
             }
-
         }
 
         public static void Text(string username, string message, string destinationIp)
@@ -460,7 +466,7 @@ namespace CriClient
             if (username.Length <= USERNAME_MAX_LENGTH && message.Length <= MESSAGE_MAX_LENGTH)
             {
                 string packet = ProtocolCode.Text + "\n" + username + "\n" + message;
-                SendPacket(false, packet, destinationIp);
+                SendPacket(false, packet, destinationIp, CLIENT_TCP_PORT);
             }
             else
             {
@@ -480,10 +486,12 @@ namespace CriClient
                     List<string> listAnswer = new List<string>(tokenizedanswer);
                     return new Response { IsSuccessful = false, MessageToUser = "Following users are not found: " + string.Join("\n", tokenizedanswer.TakeLast(tokenizedanswer.Length - 2)) };
                 }
+
                 if (tokenizedanswer[1] == "OK")
                 {
                     return new Response { IsSuccessful = true, MessageToUser = "Group successfully created. " };
                 }
+
                 return new Response() { IsSuccessful = false, MessageToUser = "Unknown Error" };
             }
             else
@@ -501,12 +509,14 @@ namespace CriClient
             {
                 return new Response { IsSuccessful = false, MessageToUser = "Group with the given ID doesn't exist." };
             }
+
             if (tokenizedanswer[1] == "OK")
             {
                 if (!Dataholder.groupMemberIps.ContainsKey(gid))
                 {
                     Dataholder.groupMemberIps.Add(gid, new Dictionary<string, string>());
                 }
+
                 Dictionary<string, string> groupMembers = Dataholder.groupMemberIps[gid];
                 for (int i = 2; i < tokenizedanswer.Length; i += 2)
                 {
@@ -514,6 +524,7 @@ namespace CriClient
                     {
                         continue;
                     }
+
                     if (!groupMembers.ContainsKey(tokenizedanswer[i + 1]))
                     {
                         groupMembers.Add(tokenizedanswer[i + 1], tokenizedanswer[i]);
@@ -523,8 +534,10 @@ namespace CriClient
                         groupMembers[tokenizedanswer[i + 1]] = tokenizedanswer[i];
                     }
                 }
+
                 return new Response { IsSuccessful = true, MessageToUser = string.Join("\n", tokenizedanswer.TakeLast(tokenizedanswer.Length - 2)) };
             }
+
             return new Response() { IsSuccessful = false, MessageToUser = "Unknown Error" };
         }
 
@@ -534,13 +547,14 @@ namespace CriClient
             {
                 throw new Exception("Group does not exist.");
             }
+
             if (username.Length <= USERNAME_MAX_LENGTH && message.Length <= MESSAGE_MAX_LENGTH)
             {
                 Dictionary<string, string> userIps = Dataholder.groupMemberIps[gid];
                 string packet = ProtocolCode.GroupText + "\n" + gid + "\n" + username + "\n" + message;
                 foreach (string ip in userIps.Values)
                 {
-                    SendPacket(false, packet, ip);
+                    SendPacket(false, packet, ip, CLIENT_TCP_PORT);
                 }
             }
             else
