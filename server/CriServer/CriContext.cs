@@ -30,6 +30,7 @@ namespace CriServer
         public Guid UserId { get; set; }
         public string Username { get; set; }
         public string Password { get; set; }
+        public string Base64EncodedCertificate { get; set; }
         public IPAddress IpAddress { get; set; }
         public ICollection<Group> Groups { get; set; }
     }

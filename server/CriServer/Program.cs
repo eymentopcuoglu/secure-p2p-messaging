@@ -6,6 +6,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 using System;
+using System.IO;
+using System.Security.Cryptography;
 
 namespace CriServer
 {
@@ -16,6 +18,7 @@ namespace CriServer
             IConfiguration configuration = new ConfigurationBuilder()
                 .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
                 .Build();
+            
             string connectionStringOption = "PostgresDefault";
             if (args.Length == 1 && args[0] == "--is-standalone")
             {
@@ -32,6 +35,7 @@ namespace CriServer
                 ).Build();
             CriContext dbContext = host.Services.GetService<CriContext>();
             dbContext?.Database.EnsureCreated();
+            //dbContext?.Database.Migrate();
 
             Log.Logger = new LoggerConfiguration()
                 .WriteTo.Console()
@@ -39,10 +43,8 @@ namespace CriServer
                     flushToDiskInterval: TimeSpan.FromSeconds(1))
                 .CreateLogger();
             Log.Logger.Information("Starting registry server listeners."); // Do not delete!
-                                                                           // This is important for logging to work in background threads. I don't know why but removing the line above breaks logging.
-
-            RegistryServer registryServer = new RegistryServer(host.Services.GetService<IUserService>(),
-                host.Services.GetService<IGroupService>());
+            
+            RegistryServer registryServer = new RegistryServer(host.Services.GetService<IUserService>(), host.Services.GetService<IGroupService>());
             registryServer.Start();
 
             Log.CloseAndFlush();

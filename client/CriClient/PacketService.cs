@@ -299,7 +299,7 @@ namespace CriClient
         {
             if (username.Length <= USERNAME_MAX_LENGTH && password.Length <= PASSWORD_MAX_LENGTH)
             {
-                string packet = ProtocolCode.Register + "\n" + username + "\n" + password;
+                string packet = ProtocolCode.Register + "\n" + username + "\n" + password + "\n" + Dataholder.Base64EncodedPublicKey;
                 string answer = SendPacket(false, packet);
                 string[] tokenizedanswer;
                 int counter = 0;

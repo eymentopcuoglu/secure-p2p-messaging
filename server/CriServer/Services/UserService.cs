@@ -21,7 +21,7 @@ namespace CriServer.Services
             _criContext = services.GetService<CriContext>();
         }
 
-        public RegistryResponse RegisterUser(string username, string password)
+        public RegistryResponse RegisterUser(string username, string password, string base64EncodedCertificate)
         {
             if (!IsUserValid(username, password))
                 return RegistryResponse.REGISTER_INVALID_USERNAME_OR_PASSWORD;
@@ -32,7 +32,8 @@ namespace CriServer.Services
             _criContext.Add(new User()
             {
                 Username = username,
-                Password = password
+                Password = password,
+                Base64EncodedCertificate = base64EncodedCertificate
             });
             _criContext.SaveChanges();
 

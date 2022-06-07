@@ -3,9 +3,11 @@ using Serilog;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 
@@ -16,6 +18,7 @@ namespace CriServer
         private readonly IUserService _userService;
         private readonly ConcurrentDictionary<IPAddress, DateTime> _lastHeartBeats;
         private readonly IGroupService _groupService;
+        private readonly RSA _rsa;
 
         private TcpListener tcpListener;
         private UdpClient udpListener;
@@ -23,9 +26,13 @@ namespace CriServer
         private const int TCP_PORT = 5553;
         private const int UDP_PORT = 5554;
         private const int ACTIVITY_TIMEOUT = 20;
+        
+        private const string PUBLIC_KEY_FILE_PATH = "public.key";
+        private const string PRIVATE_KEY_FILE_PATH = "private.key";
 
         public RegistryServer(IUserService userService, IGroupService groupService)
         {
+            _rsa = GetRSAKeyPair();
             _userService = userService;
             _groupService = groupService;
             _lastHeartBeats = new ConcurrentDictionary<IPAddress, DateTime>();
@@ -59,7 +66,7 @@ namespace CriServer
                         TcpClient client = tcpListener.AcceptTcpClient();
                         NetworkStream incomingStream = client.GetStream();
 
-                        byte[] incomingBuffer = new byte[256];
+                        byte[] incomingBuffer = new byte[2048];
                         incomingStream.Read(incomingBuffer, 0, incomingBuffer.Length);
 
                         logger.Information("Received TCP connection from {IP} Sleeping...",
@@ -146,7 +153,12 @@ namespace CriServer
 
         private RegistryResponse Register(string[] payload)
         {
-            return _userService.RegisterUser(payload[0], payload[1]);
+            string base64EncodedPublicKey = payload[2];
+            
+            byte[] certificate = _rsa.SignData(Convert.FromBase64String(base64EncodedPublicKey), HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+            string base64EncodedCertificate = Convert.ToBase64String(certificate);
+            
+            return _userService.RegisterUser(payload[0], payload[1], base64EncodedCertificate);
         }
 
         private RegistryResponse Login(string[] payload, IPAddress ipAddress)
@@ -183,7 +195,38 @@ namespace CriServer
         {
             return _groupService.SearchGroup(new Guid(payload[0]));
         }
+        
+        
+        private static RSA GetRSAKeyPair()
+        {
+            if (!File.Exists(PUBLIC_KEY_FILE_PATH) || !File.Exists(PRIVATE_KEY_FILE_PATH))
+            {
+                RSA rsa = RSA.Create();
 
+                string publicKey = Convert.ToBase64String(rsa.ExportRSAPublicKey());
+                string privateKey = Convert.ToBase64String(rsa.ExportRSAPrivateKey());
+
+                File.WriteAllText(PUBLIC_KEY_FILE_PATH, publicKey);
+                File.WriteAllText(PRIVATE_KEY_FILE_PATH, privateKey);
+
+                return rsa;
+            }
+            else
+            {
+                string publicKey = File.ReadAllText(PUBLIC_KEY_FILE_PATH);
+                string privateKey = File.ReadAllText(PRIVATE_KEY_FILE_PATH);
+
+                byte[] privateKeyBytes = Convert.FromBase64String(privateKey);
+                byte[] publicKeyBytes = Convert.FromBase64String(publicKey);
+
+                RSA rsa = RSA.Create();
+                rsa.ImportRSAPublicKey(publicKeyBytes, out _);
+                rsa.ImportRSAPrivateKey(privateKeyBytes, out _);
+                
+                return rsa;
+            }
+        }
+        
         public void Stop()
         {
             tcpListener.Stop();

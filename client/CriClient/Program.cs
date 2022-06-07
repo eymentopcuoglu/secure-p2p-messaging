@@ -1,18 +1,25 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Security.Cryptography;
 using System.Threading;
 
 namespace CriClient
 {
     class Program
     {
+        private const string PUBLIC_KEY_FILE_PATH = "public.key";
+        private const string PRIVATE_KEY_FILE_PATH = "private.key";
+
         private static string LoggedinUsername { get; set; }
         static bool packetsent = false;
+
         static void Main(string[] args)
         {
+            SetRSAKeyPair();
+
             while (true)
             {
-
                 Console.WriteLine("1.Register\n2.Login");
                 string menuopt = Console.ReadLine();
                 menuopt = menuopt.ToLower();
@@ -43,14 +50,12 @@ namespace CriClient
                         Console.WriteLine(response.MessageToUser);
                         packetsent = true;
                     }
-
                 }
                 else
                 {
                     Environment.Exit(0);
                 }
             }
-
         }
 
         public static void afterLogin()
@@ -63,10 +68,12 @@ namespace CriClient
                     Thread.Sleep(20);
                     continue;
                 }
+
                 if (PacketService.isChatting)
                 {
                     PacketService.StartChat(PacketService.chattingWithUser);
                 }
+
                 Console.WriteLine("1.Search\n2.Chat\n3.Create Group\n4.Search Group\n5.Text Group\n6.Logout");
                 string chooseaction = Console.ReadLine();
                 //chooseaction = chooseaction.ToLower();
@@ -103,6 +110,7 @@ namespace CriClient
                         users.Add(userinput);
                         userinput = Console.ReadLine();
                     }
+
                     Response response = PacketService.GroupCreate(users);
                     Console.WriteLine(response.MessageToUser);
                 }
@@ -131,7 +139,40 @@ namespace CriClient
                     return;
                 }
             }
+        }
 
+        private static void SetRSAKeyPair()
+        {
+            if (!File.Exists(PUBLIC_KEY_FILE_PATH) || !File.Exists(PRIVATE_KEY_FILE_PATH))
+            {
+                RSA rsa = RSA.Create();
+
+                string publicKey = Convert.ToBase64String(rsa.ExportRSAPublicKey());
+                string privateKey = Convert.ToBase64String(rsa.ExportRSAPrivateKey());
+
+                File.WriteAllText(PUBLIC_KEY_FILE_PATH, publicKey);
+                File.WriteAllText(PRIVATE_KEY_FILE_PATH, privateKey);
+
+                Dataholder.RSA = rsa;
+                Dataholder.Base64EncodedPrivateKey = publicKey;
+                Dataholder.Base64EncodedPublicKey = privateKey;
+            }
+            else
+            {
+                string publicKey = File.ReadAllText(PUBLIC_KEY_FILE_PATH);
+                string privateKey = File.ReadAllText(PRIVATE_KEY_FILE_PATH);
+
+                byte[] privateKeyBytes = Convert.FromBase64String(privateKey);
+                byte[] publicKeyBytes = Convert.FromBase64String(publicKey);
+
+                RSA rsa = RSA.Create();
+                rsa.ImportRSAPrivateKey(privateKeyBytes, out _);
+                rsa.ImportRSAPublicKey(publicKeyBytes, out _);
+                
+                Dataholder.RSA = rsa;
+                Dataholder.Base64EncodedPrivateKey = publicKey;
+                Dataholder.Base64EncodedPublicKey = privateKey;
+            }
         }
     }
 }
