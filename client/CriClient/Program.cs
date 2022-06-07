@@ -8,8 +8,8 @@ namespace CriClient
 {
     class Program
     {
-        private const string PUBLIC_KEY_FILE_PATH = "public.key";
-        private const string PRIVATE_KEY_FILE_PATH = "private.key";
+        private const string CLIENT_PUBLIC_KEY_FILE_PATH = "client.public.key";
+        private const string CLIENT_PRIVATE_KEY_FILE_PATH = "client.private.key";
 
         private static string LoggedinUsername { get; set; }
         static bool packetsent = false;
@@ -17,6 +17,7 @@ namespace CriClient
         static void Main(string[] args)
         {
             SetRSAKeyPair();
+            SetCAPublicKey();
 
             while (true)
             {
@@ -143,24 +144,24 @@ namespace CriClient
 
         private static void SetRSAKeyPair()
         {
-            if (!File.Exists(PUBLIC_KEY_FILE_PATH) || !File.Exists(PRIVATE_KEY_FILE_PATH))
+            if (!File.Exists(CLIENT_PUBLIC_KEY_FILE_PATH) || !File.Exists(CLIENT_PRIVATE_KEY_FILE_PATH))
             {
                 RSA rsa = RSA.Create();
 
                 string publicKey = Convert.ToBase64String(rsa.ExportRSAPublicKey());
                 string privateKey = Convert.ToBase64String(rsa.ExportRSAPrivateKey());
 
-                File.WriteAllText(PUBLIC_KEY_FILE_PATH, publicKey);
-                File.WriteAllText(PRIVATE_KEY_FILE_PATH, privateKey);
+                File.WriteAllText(CLIENT_PUBLIC_KEY_FILE_PATH, publicKey);
+                File.WriteAllText(CLIENT_PRIVATE_KEY_FILE_PATH, privateKey);
 
-                Dataholder.RSA = rsa;
+                Dataholder.ClientRSA = rsa;
                 Dataholder.Base64EncodedPrivateKey = publicKey;
                 Dataholder.Base64EncodedPublicKey = privateKey;
             }
             else
             {
-                string publicKey = File.ReadAllText(PUBLIC_KEY_FILE_PATH);
-                string privateKey = File.ReadAllText(PRIVATE_KEY_FILE_PATH);
+                string publicKey = File.ReadAllText(CLIENT_PUBLIC_KEY_FILE_PATH);
+                string privateKey = File.ReadAllText(CLIENT_PRIVATE_KEY_FILE_PATH);
 
                 byte[] privateKeyBytes = Convert.FromBase64String(privateKey);
                 byte[] publicKeyBytes = Convert.FromBase64String(publicKey);
@@ -169,9 +170,28 @@ namespace CriClient
                 rsa.ImportRSAPrivateKey(privateKeyBytes, out _);
                 rsa.ImportRSAPublicKey(publicKeyBytes, out _);
                 
-                Dataholder.RSA = rsa;
+                Dataholder.ClientRSA = rsa;
                 Dataholder.Base64EncodedPrivateKey = publicKey;
                 Dataholder.Base64EncodedPublicKey = privateKey;
+            }
+        }
+
+        private static void SetCAPublicKey()
+        {
+            if (!File.Exists(PacketService.CA_PUBLIC_KEY_FILE_PATH))
+            {
+                PacketService.SetCAPublicKey();
+            }
+            else
+            {
+                string publicKey = File.ReadAllText(PacketService.CA_PUBLIC_KEY_FILE_PATH);
+                
+                byte[] publicKeyBytes = Convert.FromBase64String(publicKey);
+
+                RSACryptoServiceProvider rsa = new RSACryptoServiceProvider();
+                rsa.ImportRSAPublicKey(publicKeyBytes, out _);
+                
+                Dataholder.CA_RSA = rsa;
             }
         }
     }

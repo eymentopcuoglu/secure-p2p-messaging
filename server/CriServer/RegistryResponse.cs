@@ -14,7 +14,7 @@ namespace CriServer
             Value = value;
         }
 
-        public static RegistryResponse REGISTER_SUCCESSFUL => new(ProtocolCode.Register + "\nOK");
+        public static RegistryResponse REGISTER_SUCCESSFUL(string base64EncodedCertificate) => new(ProtocolCode.Register + "\nOK\n" + base64EncodedCertificate);
 
         public static RegistryResponse REGISTER_INVALID_USERNAME_OR_PASSWORD => new(ProtocolCode.Register + "\nFAIL");
 
@@ -39,6 +39,7 @@ namespace CriServer
 
         public static RegistryResponse GROUP_SEARCH_SUCCESSFUL(List<UserIpDto> userIpDtos) => new(ProtocolCode.GroupSearch + "\nOK\n"+ string.Join("\n", userIpDtos));
         public static RegistryResponse GROUP_SEARCH_NOT_FOUND => new(ProtocolCode.GroupSearch + "\nNOT_FOUND");
+        public static RegistryResponse CA_PUBLIC_KEY_SUCCESS(string base64EncodedPublicKey) => new(ProtocolCode.CAPublicKey + "\n" + base64EncodedPublicKey);
 
         public override string ToString()
         {

@@ -10,8 +10,10 @@ namespace CriClient
         public static Dictionary<string, string> userIPs = new Dictionary<string, string>();
         public static Dictionary<Guid, Dictionary<string, string>> groupMemberIps = new Dictionary<Guid, Dictionary<string, string>>();
 
-        public static RSA RSA;
+        public static RSA ClientRSA;
         public static string Base64EncodedPrivateKey;
         public static string Base64EncodedPublicKey;
+        
+        public static RSA CA_RSA;
     }
 }

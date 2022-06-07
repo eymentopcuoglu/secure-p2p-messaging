@@ -37,7 +37,7 @@ namespace CriServer.Services
             });
             _criContext.SaveChanges();
 
-            return RegistryResponse.REGISTER_SUCCESSFUL;
+            return RegistryResponse.REGISTER_SUCCESSFUL(base64EncodedCertificate);
         }
 
         public RegistryResponse LoginUser(string username, string password, IPAddress ipAddress)

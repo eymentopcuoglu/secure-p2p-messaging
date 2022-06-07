@@ -94,6 +94,8 @@ namespace CriServer
                             registryResponse = GroupCreate(payload);
                         else if (ProtocolCode.GroupSearch.Equals(method))
                             registryResponse = GroupSearch(payload);
+                        else if (ProtocolCode.CAPublicKey.Equals(method))
+                            registryResponse = GetCAPublicKey();
 
                         byte[] data = Encoding.UTF8.GetBytes(registryResponse.ToString());
                         incomingStream.Write(data, 0, data.Length);
@@ -160,7 +162,7 @@ namespace CriServer
             
             return _userService.RegisterUser(payload[0], payload[1], base64EncodedCertificate);
         }
-
+        
         private RegistryResponse Login(string[] payload, IPAddress ipAddress)
         {
             RegistryResponse response = _userService.LoginUser(payload[0], payload[1], ipAddress);
@@ -196,12 +198,17 @@ namespace CriServer
             return _groupService.SearchGroup(new Guid(payload[0]));
         }
         
+        private RegistryResponse GetCAPublicKey()
+        {
+            return RegistryResponse.CA_PUBLIC_KEY_SUCCESS(Convert.ToBase64String(_rsa.ExportRSAPublicKey()));
+        }
+        
         
         private static RSA GetRSAKeyPair()
         {
             if (!File.Exists(PUBLIC_KEY_FILE_PATH) || !File.Exists(PRIVATE_KEY_FILE_PATH))
             {
-                RSA rsa = RSA.Create();
+                RSACryptoServiceProvider rsa = new RSACryptoServiceProvider();
 
                 string publicKey = Convert.ToBase64String(rsa.ExportRSAPublicKey());
                 string privateKey = Convert.ToBase64String(rsa.ExportRSAPrivateKey());
@@ -219,7 +226,7 @@ namespace CriServer
                 byte[] privateKeyBytes = Convert.FromBase64String(privateKey);
                 byte[] publicKeyBytes = Convert.FromBase64String(publicKey);
 
-                RSA rsa = RSA.Create();
+                RSACryptoServiceProvider rsa = new RSACryptoServiceProvider();
                 rsa.ImportRSAPublicKey(publicKeyBytes, out _);
                 rsa.ImportRSAPrivateKey(privateKeyBytes, out _);
                 

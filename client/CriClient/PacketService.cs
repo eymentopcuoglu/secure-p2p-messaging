@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 using System.Timers;
@@ -33,6 +35,9 @@ namespace CriClient
 
         const int MESSAGE_MAX_LENGTH = 325;
         const int MAX_USER_COUNT = 100;
+
+
+        public const string CA_PUBLIC_KEY_FILE_PATH = "ca.public.key";
 
         public static string SendPacket(bool isUdp, string payload, string destinationIP = SERVER, int destinationPort = SERVER_TCP_PORT)
         {
@@ -316,7 +321,17 @@ namespace CriClient
 
                 if (tokenizedanswer[1] == "OK")
                 {
-                    return new Response() { IsSuccessful = true, MessageToUser = "Registered Successfully" };
+                    string base64EncodedCertificate = tokenizedanswer[2];
+
+                    bool isValid = Dataholder.CA_RSA.VerifyData(Dataholder.ClientRSA.ExportRSAPublicKey(),
+                                                                Convert.FromBase64String(base64EncodedCertificate),
+                                                                HashAlgorithmName.SHA256,
+                                                                RSASignaturePadding.Pkcs1);
+
+                    if (isValid)
+                        return new Response() { IsSuccessful = true, MessageToUser = "Registered Successfully" };
+                    else
+                        return new Response() { IsSuccessful = false, MessageToUser = "Certificate can not be verified" };
                 }
 
                 return new Response() { IsSuccessful = false, MessageToUser = "Unknown Error" };
@@ -561,6 +576,29 @@ namespace CriClient
             {
                 throw new Exception("username or message char limit exceeded");
             }
+        }
+
+        public static void SetCAPublicKey()
+        {
+            string packet = ProtocolCode.CAPublicKey + "";
+            string answer = SendPacket(false, packet);
+            string[] tokenizedanswer;
+            int counter = 0;
+            do
+            {
+                tokenizedanswer = answer.Split("\n");
+                counter++;
+            } while (!ProtocolCode.CAPublicKey.Equals(tokenizedanswer[0]) && counter < 2);
+
+            string base64EncodedPublicKey = tokenizedanswer[1];
+            File.WriteAllText(CA_PUBLIC_KEY_FILE_PATH, base64EncodedPublicKey);
+
+            byte[] publicKeyBytes = Convert.FromBase64String(base64EncodedPublicKey);
+
+            RSACryptoServiceProvider rsa = new RSACryptoServiceProvider();
+            rsa.ImportRSAPublicKey(publicKeyBytes, out _);
+
+            Dataholder.CA_RSA = rsa;
         }
     }
 }

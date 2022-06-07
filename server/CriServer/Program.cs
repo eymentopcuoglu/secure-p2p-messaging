@@ -33,6 +33,7 @@ namespace CriServer
                         .AddScoped<IUserService, UserService>()
                         .AddScoped<IGroupService, GroupService>()
                 ).Build();
+            
             CriContext dbContext = host.Services.GetService<CriContext>();
             dbContext?.Database.EnsureCreated();
             //dbContext?.Database.Migrate();
