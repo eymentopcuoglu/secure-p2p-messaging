@@ -14,6 +14,7 @@ namespace CriClient
         public static Dictionary<string, byte[]> userMacKeys = new Dictionary<string,byte[]>(); // key ip address, value mac key
         public static Dictionary<string, byte[]> userIVs = new Dictionary<string,byte[]>(); // key ip address, value iv
         public static Dictionary<string, byte[]> userSymmetricKeys = new Dictionary<string,byte[]>(); // key ip address, value symmetric key
+        public static Dictionary<string, int> userSequenceNumbers = new Dictionary<string,int>(); // key ip address, value sequence number
         public static Dictionary<Guid, Dictionary<string, string>> groupMemberIps = new Dictionary<Guid, Dictionary<string, string>>();
 
         public static RSA ClientRSA;

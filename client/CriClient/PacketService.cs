@@ -153,9 +153,20 @@ namespace CriClient
                                 }
                             }
 
+                            if (Dataholder.userSequenceNumbers.ContainsKey(remoteIP))
+                            {
+                                Dataholder.userSequenceNumbers[remoteIP]++;
+                            }
+                            else
+                            {
+                                Dataholder.userSequenceNumbers.Add(remoteIP, 1);
+                            }
+
+                            int sequenceNumber = Dataholder.userSequenceNumbers[remoteIP];
+
                             byte[] hashBytes;
                             using (HMACSHA256 hash = new HMACSHA256(Dataholder.userMacKeys[remoteIP]))
-                                hashBytes = hash.ComputeHash(Encoding.UTF8.GetBytes(plainText));
+                                hashBytes = hash.ComputeHash(BitConverter.GetBytes(sequenceNumber).Concat(Encoding.UTF8.GetBytes(plainText)).ToArray());
 
                             byte[] mac = Convert.FromBase64String(parsedMessage[3]);
 
@@ -637,9 +648,20 @@ namespace CriClient
                     }
                 }
 
+                if (Dataholder.userSequenceNumbers.ContainsKey(destinationIp))
+                {
+                    Dataholder.userSequenceNumbers[destinationIp]++;
+                }
+                else
+                {
+                    Dataholder.userSequenceNumbers.Add(destinationIp, 1);
+                }
+
+                int sequenceNumber = Dataholder.userSequenceNumbers[destinationIp];
+
                 byte[] hashBytes;
                 using (HMACSHA256 hash = new HMACSHA256(Dataholder.userMacKeys[destinationIp]))
-                    hashBytes = hash.ComputeHash(Encoding.UTF8.GetBytes(message));
+                    hashBytes = hash.ComputeHash(BitConverter.GetBytes(sequenceNumber).Concat(Encoding.UTF8.GetBytes(message)).ToArray());
 
                 Console.WriteLine("Sending P2P text message to: {0}, plain:{1}, cipher:{2}", destinationIp, message, Convert.ToBase64String(cipherText));
                 string packet = ProtocolCode.Text + "\n" + username + "\n" + Convert.ToBase64String(cipherText) + "\n" + Convert.ToBase64String(hashBytes);
