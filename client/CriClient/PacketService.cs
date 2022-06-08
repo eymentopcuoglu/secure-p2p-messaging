@@ -162,7 +162,7 @@ namespace CriClient
                             }
                             else if (parsedMessage[1].Equals("NONCE"))
                             {
-                                byte[] nonce = Convert.FromBase64String(parsedMessage[2]);
+                                byte[] nonce = BitConverter.GetBytes(int.Parse(parsedMessage[2]));
                                 byte[] publicKeyOfPeer = Convert.FromBase64String(parsedMessage[3]);
 
                                 RSACryptoServiceProvider peerRSA = new RSACryptoServiceProvider();
