@@ -187,8 +187,9 @@ namespace CriClient
                                 if (nonce.SequenceEqual(Dataholder.userNonces[remoteIP]))
                                 {
                                     string nonceAckPacket = ProtocolCode.Handshake + "\nNONCEACK";
-                                    SendPacket(false, nonceAckPacket, remoteIP, CLIENT_TCP_PORT);
                                     Console.WriteLine("NONCE ENCRYPTED and successfully sent!");
+                                    SendPacket(false, nonceAckPacket, remoteIP, CLIENT_TCP_PORT);
+                                    
                                 }
                                 else
                                 {
