@@ -211,7 +211,7 @@ namespace CriClient
                                 Dataholder.userNonces[remoteIP] = BitConverter.GetBytes(nonce);
 
                                 string noncePacket = ProtocolCode.Handshake + "\nNONCE\n" + nonce + "\n" + Convert.ToBase64String(Dataholder.ClientRSA.ExportRSAPublicKey());
-                                Console.WriteLine("NONCE created!");
+                                Console.WriteLine("\t\t HANDSHAKE LOG: NONCE created!");
                                 SendPacket(false, noncePacket, remoteIP, CLIENT_TCP_PORT);
                             }
                             else if (parsedMessage[1].Equals("NONCE"))
@@ -228,7 +228,7 @@ namespace CriClient
                                 byte[] encryptedNonce = peerRSA.Encrypt(nonce, RSAEncryptionPadding.Pkcs1);
 
                                 string encryptedNoncePacket = ProtocolCode.Handshake + "\nNONCEENC\n" + Convert.ToBase64String(encryptedNonce);
-                                Console.WriteLine("NONCE received and encrypted to be sent");
+                                Console.WriteLine("\t\t HANDSHAKE LOG: NONCE received and encrypted to be sent");
                                 SendPacket(false, encryptedNoncePacket, remoteIP, CLIENT_TCP_PORT);
                             }
                             else if (parsedMessage[1].Equals("NONCEENC"))
@@ -240,7 +240,7 @@ namespace CriClient
                                 if (nonce.SequenceEqual(Dataholder.userNonces[remoteIP]))
                                 {
                                     string nonceAckPacket = ProtocolCode.Handshake + "\nNONCEACK";
-                                    Console.WriteLine("NONCE ENCRYPTED and successfully sent!");
+                                    Console.WriteLine("\t\t HANDSHAKE LOG: NONCE ENCRYPTED and successfully sent!");
                                     SendPacket(false, nonceAckPacket, remoteIP, CLIENT_TCP_PORT);
                                 }
                                 else
@@ -257,7 +257,7 @@ namespace CriClient
                                 byte[] encryptedMasterSecret = Dataholder.userPublicKeys[remoteIP].Encrypt(masterSecret, RSAEncryptionPadding.Pkcs1);
                                 string masterSecretPacket = ProtocolCode.Handshake + "\nMASTERSECRET\n" + Convert.ToBase64String(encryptedMasterSecret);
                                 Dataholder.userMasterSecrets[remoteIP] = masterSecret;
-                                Console.WriteLine("Master secret key is created!");
+                                Console.WriteLine("\t\t HANDSHAKE LOG: Master secret key is created!");
 
                                 byte[] macKeyBytes = Rfc2898DeriveBytes.Pbkdf2(masterSecret, masterSecret, 50, HashAlgorithmName.SHA256, 16);
                                 Dataholder.userMacKeys[remoteIP] = macKeyBytes;
@@ -268,7 +268,7 @@ namespace CriClient
                                 byte[] symmetricKeyBytes = Rfc2898DeriveBytes.Pbkdf2(masterSecret, masterSecret, 150, HashAlgorithmName.SHA256, 16);
                                 Dataholder.userSymmetricKeys[remoteIP] = symmetricKeyBytes;
 
-                                Console.WriteLine("NONCE ACKNOWLEDGED and master secret key is sent!");
+                                Console.WriteLine("\t\t HANDSHAKE LOG: NONCE ACKNOWLEDGED and master secret key is sent!");
                                 SendPacket(false, masterSecretPacket, remoteIP, CLIENT_TCP_PORT);
                             }
                             else if (parsedMessage[1].Equals("INVALIDNONCE"))
@@ -290,7 +290,7 @@ namespace CriClient
 
                                 byte[] symmetricKeyBytes = Rfc2898DeriveBytes.Pbkdf2(masterSecret, masterSecret, 150, HashAlgorithmName.SHA256, 16);
                                 Dataholder.userSymmetricKeys[remoteIP] = symmetricKeyBytes;
-                                Console.WriteLine("Master secret key received and proccessed!");
+                                Console.WriteLine("\t\t HANDSHAKE LOG: Master secret key received and proccessed!");
                             }
                         }
 
