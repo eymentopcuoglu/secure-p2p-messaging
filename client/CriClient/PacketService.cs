@@ -137,6 +137,7 @@ namespace CriClient
                                 aesAlg.Key = Dataholder.userSymmetricKeys[remoteIP];
                                 aesAlg.IV = Dataholder.userIVs[remoteIP];
                                 aesAlg.Mode = CipherMode.CBC;
+                                aesAlg.Padding = PaddingMode.PKCS7;
 
                                 ICryptoTransform decryptor = aesAlg.CreateDecryptor(aesAlg.Key, aesAlg.IV);
 
@@ -419,29 +420,7 @@ namespace CriClient
                 return ProtocolCode.Chat + "\nREJECT";
             }
         }
-
-        public static string ReceivePacket()
-        {
-            TcpListener server = new TcpListener(IPAddress.Any, CLIENT_TCP_PORT);
-            server.Start();
-            List<byte> bytes = new List<byte>();
-            string data = null;
-            TcpClient client = server.AcceptTcpClient();
-            NetworkStream stream = client.GetStream();
-
-            int i;
-            while ((i = stream.ReadByte()) != -1)
-            {
-                bytes.Add((byte) i);
-            }
-
-            data = Encoding.UTF8.GetString(bytes.ToArray());
-            client.Close();
-            server.Stop();
-            return data;
-        }
-
-
+        
         public static Response Register(string username, string password)
         {
             if (username.Length <= USERNAME_MAX_LENGTH && password.Length <= PASSWORD_MAX_LENGTH)
@@ -645,6 +624,7 @@ namespace CriClient
                     aesAlg.Key = Dataholder.userSymmetricKeys[destinationIp];
                     aesAlg.IV = Dataholder.userIVs[destinationIp];
                     aesAlg.Mode = CipherMode.CBC;
+                    aesAlg.Padding = PaddingMode.PKCS7;
 
                     ICryptoTransform encryptor = aesAlg.CreateEncryptor(aesAlg.Key, aesAlg.IV);
 
