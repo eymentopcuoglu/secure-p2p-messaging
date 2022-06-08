@@ -630,16 +630,16 @@ namespace CriClient
             {
                 AesCryptoServiceProvider aes = new AesCryptoServiceProvider()
                 {
-                    Key = Dataholder.userSymmetricKeys[Dataholder.userIPs[username]],
-                    IV = Dataholder.userIVs[Dataholder.userIPs[username]],
+                    Key = Dataholder.userSymmetricKeys[destinationIp],
+                    IV = Dataholder.userIVs[destinationIp],
                     Mode = CipherMode.CBC,
                     Padding = PaddingMode.PKCS7
                 };
 
-                byte[] cipherText = aes.EncryptCbc(Encoding.UTF8.GetBytes(message), Dataholder.userIVs[Dataholder.userIPs[username]]);
+                byte[] cipherText = aes.EncryptCbc(Encoding.UTF8.GetBytes(message), Dataholder.userIVs[destinationIp]);
 
                 byte[] hashBytes;
-                using (HMACSHA256 hash = new HMACSHA256(Dataholder.userMacKeys[Dataholder.userIPs[username]]))
+                using (HMACSHA256 hash = new HMACSHA256(Dataholder.userMacKeys[destinationIp]))
                     hashBytes = hash.ComputeHash(Encoding.UTF8.GetBytes(message));
 
                 Console.WriteLine("Sending P2P text message to: {0}, plain:{1}, cipher:{2}", destinationIp, message, Convert.ToBase64String(cipherText));
