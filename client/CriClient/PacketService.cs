@@ -265,7 +265,7 @@ namespace CriClient
                             else if (parsedMessage[1].Equals("MASTERSECRET"))
                             {
                                 byte[] encryptedMasterSecret = Convert.FromBase64String(parsedMessage[2]);
-                                byte[] masterSecret = Dataholder.userPublicKeys[remoteIP].Decrypt(encryptedMasterSecret, RSAEncryptionPadding.Pkcs1);
+                                byte[] masterSecret = Dataholder.ClientRSA.Decrypt(encryptedMasterSecret, RSAEncryptionPadding.Pkcs1);
 
                                 Dataholder.userMasterSecrets[remoteIP] = masterSecret;
 
