@@ -158,6 +158,7 @@ namespace CriClient
                                 Dataholder.userNonces[remoteIP] = BitConverter.GetBytes(nonce);
 
                                 string noncePacket = ProtocolCode.Handshake + "\nNONCE\n" + nonce + "\n" + Convert.ToBase64String(Dataholder.ClientRSA.ExportRSAPublicKey());
+                                Console.WriteLine("NONCE created!");
                                 SendPacket(false, noncePacket, remoteIP, CLIENT_TCP_PORT);
                             }
                             else if (parsedMessage[1].Equals("NONCE"))
@@ -174,6 +175,7 @@ namespace CriClient
                                 byte[] encryptedNonce = peerRSA.Encrypt(nonce, RSAEncryptionPadding.Pkcs1);
 
                                 string encryptedNoncePacket = ProtocolCode.Handshake + "\nNONCEENC\n" + Convert.ToBase64String(encryptedNonce);
+                                Console.WriteLine("NONCE received and encrypted to be sent");
                                 SendPacket(false, encryptedNoncePacket, remoteIP, CLIENT_TCP_PORT);
                             }
                             else if (parsedMessage[1].Equals("NONCEENC"))
@@ -186,6 +188,7 @@ namespace CriClient
                                 {
                                     string nonceAckPacket = ProtocolCode.Handshake + "\nNONCEACK";
                                     SendPacket(false, nonceAckPacket, remoteIP, CLIENT_TCP_PORT);
+                                    Console.WriteLine("NONCE ENCRYPTED and successfully sent!");
                                 }
                                 else
                                 {
@@ -202,6 +205,7 @@ namespace CriClient
                                 byte[] encryptedMasterSecret = Dataholder.userPublicKeys[remoteIP].Encrypt(masterSecretBytes, RSAEncryptionPadding.Pkcs1);
                                 string masterSecretPacket = ProtocolCode.Handshake + "\nMASTERSECRET\n" + Convert.ToBase64String(encryptedMasterSecret);
                                 Dataholder.userMasterSecrets[remoteIP] = masterSecretBytes;
+                                Console.WriteLine("Master secret key is created!");
                                 
                                 Rfc2898DeriveBytes macKey = new Rfc2898DeriveBytes(masterSecretBytes, masterSecretBytes, 50);
                                 byte[] macKeyBytes = macKey.GetBytes(16);
@@ -214,8 +218,10 @@ namespace CriClient
                                 Rfc2898DeriveBytes symmetricKey = new Rfc2898DeriveBytes(masterSecretBytes, masterSecretBytes, 150);
                                 byte[] symmetricKeyBytes = symmetricKey.GetBytes(16);
                                 Dataholder.userSymmetricKeys[remoteIP] = symmetricKeyBytes;
-                                
+
+                                Console.WriteLine("NONCE ACKNOWLEDGED and master secret key is sent!");
                                 SendPacket(false, masterSecretPacket, remoteIP, CLIENT_TCP_PORT);
+                                
                             }
                             else if (parsedMessage[1].Equals("INVALIDNONCE"))
                             {
@@ -237,6 +243,7 @@ namespace CriClient
                                 Rfc2898DeriveBytes symmetricKey = new Rfc2898DeriveBytes(masterSecret, masterSecret, 150);
                                 byte[] symmetricKeyBytes = symmetricKey.GetBytes(16);
                                 Dataholder.userSymmetricKeys[remoteIP] = symmetricKeyBytes;
+                                Console.WriteLine("Master secret key received and proccessed!");
                             }
                         }
 
