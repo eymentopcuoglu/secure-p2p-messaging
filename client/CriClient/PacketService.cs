@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Unicode;
 using System.Threading;
 using System.Timers;
 using Timer = System.Timers.Timer;
@@ -130,6 +131,7 @@ namespace CriClient
                         string[] parsedMessage = messageReceived.Split("\n");
                         if (ProtocolCode.Text.Equals(parsedMessage[0]))
                         {
+                            
                             isTextAvailable = true;
                             lastTextMessage = parsedMessage[2];
                         }
@@ -299,7 +301,6 @@ namespace CriClient
                         {
                             continue;
                         }
-
                         Text(Dataholder.loggedInUserName, outgoingStringBuffer.Remove(0, 2).ToString(), destinationIp);
                         if (outgoingStringBuffer.ToString() == ":q")
                         {
@@ -602,7 +603,21 @@ namespace CriClient
         {
             if (username.Length <= USERNAME_MAX_LENGTH && message.Length <= MESSAGE_MAX_LENGTH)
             {
-                string packet = ProtocolCode.Text + "\n" + username + "\n" + message;
+                AesCryptoServiceProvider aes = new AesCryptoServiceProvider()
+                {
+                    Key = Dataholder.userSymmetricKeys[Dataholder.userIPs[username]],
+                    IV = Dataholder.userIVs[Dataholder.userIPs[username]],
+                    Mode = CipherMode.CBC,
+                    Padding = PaddingMode.PKCS7
+                };
+               
+                byte[] cipherText = aes.EncryptCbc(Encoding.UTF8.GetBytes(message), Dataholder.userIVs[Dataholder.userIPs[username]]);
+                
+                byte[] hashBytes;
+                using (HMACSHA256 hash = new HMACSHA256(Dataholder.userMacKeys[Dataholder.userIPs[username]]))
+                    hashBytes = hash.ComputeHash(Encoding.UTF8.GetBytes(message));
+
+                string packet = ProtocolCode.Text + "\n" + username + "\n" + Convert.ToBase64String(cipherText) + "\n" + Convert.ToBase64String(hashBytes);
                 SendPacket(false, packet, destinationIp, CLIENT_TCP_PORT);
             }
             else
