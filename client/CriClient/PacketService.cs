@@ -124,7 +124,8 @@ namespace CriClient
                         incomingStream.Read(incomingBuffer, 0, incomingBuffer.Length);
                         string messageReceived = Encoding.UTF8.GetString(incomingBuffer.Select(b => b).Where(b => b != 0).ToArray());
 
-                        string remoteIP = client.Client.RemoteEndPoint.ToString();
+                        string remoteAddress = client.Client.RemoteEndPoint.ToString();
+                        string remoteIP = remoteAddress.Substring(0, (remoteAddress.IndexOf(':') == -1 ? remoteAddress.Length : remoteAddress.IndexOf(':')));
 
                         string[] parsedMessage = messageReceived.Split("\n");
                         if (ProtocolCode.Text.Equals(parsedMessage[0]))
@@ -134,7 +135,7 @@ namespace CriClient
                         }
                         else if (ProtocolCode.Chat.Equals(parsedMessage[0]))
                         {
-                            string response = RespondToChatRequest(remoteIP);
+                            string response = RespondToChatRequest(remoteAddress);
                             byte[] data = Encoding.UTF8.GetBytes(response);
                             incomingStream.Write(data, 0, data.Length);
                         }
