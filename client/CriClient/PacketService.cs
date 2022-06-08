@@ -203,6 +203,18 @@ namespace CriClient
                                 string masterSecretPacket = ProtocolCode.Handshake + "\nMASTERSECRET\n" + Convert.ToBase64String(encryptedMasterSecret);
                                 Dataholder.userMasterSecrets[remoteIP] = masterSecretBytes;
                                 
+                                Rfc2898DeriveBytes macKey = new Rfc2898DeriveBytes(masterSecretBytes, masterSecretBytes, 50);
+                                byte[] macKeyBytes = macKey.GetBytes(16);
+                                Dataholder.userMacKeys[remoteIP] = macKeyBytes;
+                                
+                                Rfc2898DeriveBytes IV = new Rfc2898DeriveBytes(masterSecretBytes, masterSecretBytes, 100);
+                                byte[] IVBytes = IV.GetBytes(16);
+                                Dataholder.userIVs[remoteIP] = IVBytes;
+                                
+                                Rfc2898DeriveBytes symmetricKey = new Rfc2898DeriveBytes(masterSecretBytes, masterSecretBytes, 150);
+                                byte[] symmetricKeyBytes = symmetricKey.GetBytes(16);
+                                Dataholder.userSymmetricKeys[remoteIP] = symmetricKeyBytes;
+                                
                                 SendPacket(false, masterSecretPacket, remoteIP, CLIENT_TCP_PORT);
                             }
                             else if (parsedMessage[1].Equals("INVALIDNONCE"))
@@ -212,12 +224,20 @@ namespace CriClient
                             else if (parsedMessage[1].Equals("MASTERSECRET"))
                             {
                                 byte[] masterSecret = Convert.FromBase64String(parsedMessage[2]);
-                                
                                 Dataholder.userMasterSecrets[remoteIP] = masterSecret;
+                                
+                                Rfc2898DeriveBytes macKey = new Rfc2898DeriveBytes(masterSecret, masterSecret, 50);
+                                byte[] macKeyBytes = macKey.GetBytes(16);
+                                Dataholder.userMacKeys[remoteIP] = macKeyBytes;
+                                
+                                Rfc2898DeriveBytes IV = new Rfc2898DeriveBytes(masterSecret, masterSecret, 100);
+                                byte[] IVBytes = IV.GetBytes(16);
+                                Dataholder.userIVs[remoteIP] = IVBytes;
+                                
+                                Rfc2898DeriveBytes symmetricKey = new Rfc2898DeriveBytes(masterSecret, masterSecret, 150);
+                                byte[] symmetricKeyBytes = symmetricKey.GetBytes(16);
+                                Dataholder.userSymmetricKeys[remoteIP] = symmetricKeyBytes;
                             }
-
-                            isTextAvailable = true;
-                            lastTextMessage = parsedMessage[2];
                         }
 
                         incomingStream.Close();
