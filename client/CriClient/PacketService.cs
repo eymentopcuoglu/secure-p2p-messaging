@@ -120,7 +120,7 @@ namespace CriClient
                         tcpPacketIncoming = true;
                         NetworkStream incomingStream = client.GetStream();
 
-                        byte[] incomingBuffer = new byte[256];
+                        byte[] incomingBuffer = new byte[2048];
                         incomingStream.Read(incomingBuffer, 0, incomingBuffer.Length);
                         string messageReceived = Encoding.UTF8.GetString(incomingBuffer.Select(b => b).Where(b => b != 0).ToArray());
 
