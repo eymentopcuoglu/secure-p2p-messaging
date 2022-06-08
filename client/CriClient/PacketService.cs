@@ -575,7 +575,7 @@ namespace CriClient
             Console.WriteLine("Sending handshake request to: {0}", destIp);
             SendPacket(false, handshakePacket, destIp, CLIENT_TCP_PORT);
 
-            return new Response() { IsSuccessful = true, MessageToUser = "Handshake request successfully sent!" };
+            return new Response() { IsSuccessful = true, MessageToUser = "\t\t HANDSHAKE LOG: Handshake request successfully sent!" };
         }
 
         public static Response Chat(string username)
@@ -669,7 +669,7 @@ namespace CriClient
                 using (HMACSHA256 hash = new HMACSHA256(Dataholder.userMacKeys[destinationIp]))
                     hashBytes = hash.ComputeHash(BitConverter.GetBytes(sequenceNumber).Concat(Encoding.UTF8.GetBytes(message)).ToArray());
 
-                Console.WriteLine("TEXT LOG-> Sending P2P text message to: {0}, plain:{1}, cipher:{2}", destinationIp, message, Convert.ToBase64String(cipherText));
+                Console.WriteLine("\t\t\t TEXT LOG-> Sending P2P text message to: {0}, plain:{1}, cipher:{2}", destinationIp, message, Convert.ToBase64String(cipherText));
                 string packet = ProtocolCode.Text + "\n" + username + "\n" + Convert.ToBase64String(cipherText) + "\n" + Convert.ToBase64String(hashBytes);
                 SendPacket(false, packet, destinationIp, CLIENT_TCP_PORT);
             }
