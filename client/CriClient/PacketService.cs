@@ -535,6 +535,17 @@ namespace CriClient
             }
         }
 
+        public static Response Handshake(string username)
+        {
+            string destIp = Dataholder.userIPs[username];
+            
+            string handshakePacket = ProtocolCode.Handshake + "\nINIT\n" + Convert.ToBase64String(Dataholder.ClientRSA.ExportRSAPublicKey());
+            Console.WriteLine("Sending handshake request to: {0}", destIp);
+            SendPacket(false, handshakePacket, destIp, CLIENT_TCP_PORT);
+                    
+            return new Response() { IsSuccessful = true, MessageToUser = "Handshake request successfully sent!" };
+        }
+
         public static Response Chat(string username)
         {
             if (username.Length > USERNAME_MAX_LENGTH)
@@ -547,6 +558,10 @@ namespace CriClient
             {
                 string destIp = Dataholder.userIPs[username];
 
+                if (!Dataholder.userMasterSecrets.ContainsKey(Dataholder.userIPs[username]))
+                {
+                    return new Response() { IsSuccessful = false, MessageToUser = "Please handshake first!" };
+                }
 
                 string packet = ProtocolCode.Chat + "\n" + username;
                 Console.WriteLine("Sending P2P chat request to: {0}", destIp);
@@ -564,11 +579,7 @@ namespace CriClient
 
                 if (tokenizedanswer[1] == "OK")
                 {
-                    string handshakePacket = ProtocolCode.Handshake + "\nINIT\n" + Convert.ToBase64String(Dataholder.ClientRSA.ExportRSAPublicKey());
-                    Console.WriteLine("Sending handshake request to: {0}", destIp);
-                    SendPacket(false, handshakePacket, destIp, CLIENT_TCP_PORT);
-                    
-                    return new Response() { IsSuccessful = true, MessageToUser = "Handshake request successfully sent!" };
+                    return new Response() { IsSuccessful = true, MessageToUser = "The user accepted your chat request." };
                 }
 
                 return new Response() { IsSuccessful = false, MessageToUser = "Unknown error." };

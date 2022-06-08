@@ -75,7 +75,7 @@ namespace CriClient
                     PacketService.StartChat(PacketService.chattingWithUser);
                 }
 
-                Console.WriteLine("1.Search\n2.Chat\n3.Create Group\n4.Search Group\n5.Text Group\n6.Logout");
+                Console.WriteLine("1.Search\n2.Handshake\n3.Chat\n4.Create Group\n5.Search Group\n6.Text Group\n7.Logout");
                 string chooseaction = Console.ReadLine();
                 //chooseaction = chooseaction.ToLower();
 
@@ -87,6 +87,13 @@ namespace CriClient
                     Console.WriteLine(response.MessageToUser);
                 }
                 else if (chooseaction == "2")
+                {
+                    Console.WriteLine("Please provide the username you would like to handshake with ");
+                    string user = Console.ReadLine();
+                    Response response = PacketService.Handshake(user); 
+                    Console.WriteLine(response.MessageToUser);
+                }
+                else if (chooseaction == "3")
                 {
                     Console.WriteLine("Please provide the username you would like to chat ");
                     string user = Console.ReadLine();
@@ -101,7 +108,7 @@ namespace CriClient
                         Console.WriteLine(response.MessageToUser);
                     }
                 }
-                else if (chooseaction == "3")
+                else if (chooseaction == "4")
                 {
                     Console.WriteLine("Please provide the users you would like to add to the group (Max. 100 users)");
                     List<string> users = new List<string>();
@@ -115,14 +122,14 @@ namespace CriClient
                     Response response = PacketService.GroupCreate(users);
                     Console.WriteLine(response.MessageToUser);
                 }
-                else if (chooseaction == "4")
+                else if (chooseaction == "5")
                 {
                     Console.WriteLine("Please provide the Group ID og the group you would like to search");
                     Guid GrID = Guid.Parse(Console.ReadLine());
                     Response response = PacketService.GroupSearch(GrID);
                     Console.WriteLine(response.MessageToUser);
                 }
-                else if (chooseaction == "5")
+                else if (chooseaction == "6")
                 {
                     Console.WriteLine("Please provide the Group ID og the group you would like to text");
                     Guid GrID = Guid.Parse(Console.ReadLine());
@@ -130,7 +137,7 @@ namespace CriClient
                     string message = Console.ReadLine();
                     PacketService.GroupText(GrID, LoggedinUsername, message);
                 }
-                else if (chooseaction == "6")
+                else if (chooseaction == "7")
                 {
                     Response Response = PacketService.Logout(LoggedinUsername);
                     Console.WriteLine(Response.MessageToUser);
