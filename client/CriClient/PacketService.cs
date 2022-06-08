@@ -6,7 +6,6 @@ using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.Unicode;
 using System.Threading;
 using System.Timers;
 using Timer = System.Timers.Timer;
@@ -131,10 +130,24 @@ namespace CriClient
                         string[] parsedMessage = messageReceived.Split("\n");
                         if (ProtocolCode.Text.Equals(parsedMessage[0]))
                         {
+                            if (Dataholder.userSequenceNumbers.ContainsKey(remoteIP))
+                            {
+                                Dataholder.userSequenceNumbers[remoteIP]++;
+                            }
+                            else
+                            {
+                                Dataholder.userSequenceNumbers.Add(remoteIP, 100);
+                            }
+
+                            int sequenceNumber = Dataholder.userSequenceNumbers[remoteIP];
+                            byte[] masterSecret = Dataholder.userMasterSecrets[remoteIP];
+                            byte[] symmetricKeyBytes = Rfc2898DeriveBytes.Pbkdf2(masterSecret, masterSecret, sequenceNumber, HashAlgorithmName.SHA256, 16);
+                            Dataholder.userSymmetricKeys[remoteIP] = symmetricKeyBytes;
+                            
                             string plainText;
                             using (Aes aesAlg = Aes.Create())
                             {
-                                aesAlg.Key = Dataholder.userSymmetricKeys[remoteIP];
+                                aesAlg.Key = symmetricKeyBytes;
                                 aesAlg.IV = Dataholder.userIVs[remoteIP];
                                 aesAlg.Mode = CipherMode.CBC;
                                 aesAlg.Padding = PaddingMode.PKCS7;
@@ -152,17 +165,6 @@ namespace CriClient
                                     }
                                 }
                             }
-
-                            if (Dataholder.userSequenceNumbers.ContainsKey(remoteIP))
-                            {
-                                Dataholder.userSequenceNumbers[remoteIP]++;
-                            }
-                            else
-                            {
-                                Dataholder.userSequenceNumbers.Add(remoteIP, 1);
-                            }
-
-                            int sequenceNumber = Dataholder.userSequenceNumbers[remoteIP];
 
                             byte[] hashBytes;
                             using (HMACSHA256 hash = new HMACSHA256(Dataholder.userMacKeys[remoteIP]))
@@ -624,6 +626,21 @@ namespace CriClient
         {
             if (username.Length <= USERNAME_MAX_LENGTH && message.Length <= MESSAGE_MAX_LENGTH)
             {
+                if (Dataholder.userSequenceNumbers.ContainsKey(destinationIp))
+                {
+                    Dataholder.userSequenceNumbers[destinationIp]++;
+                }
+                else
+                {
+                    Dataholder.userSequenceNumbers.Add(destinationIp, 100);
+                }
+
+                int sequenceNumber = Dataholder.userSequenceNumbers[destinationIp];
+                
+                byte[] masterSecret = Dataholder.userMasterSecrets[destinationIp];
+                byte[] symmetricKeyBytes = Rfc2898DeriveBytes.Pbkdf2(masterSecret, masterSecret, sequenceNumber, HashAlgorithmName.SHA256, 16);
+                Dataholder.userSymmetricKeys[destinationIp] = symmetricKeyBytes;
+                
                 byte[] cipherText;
                 using (Aes aesAlg = Aes.Create())
                 {
@@ -647,17 +664,6 @@ namespace CriClient
                         }
                     }
                 }
-
-                if (Dataholder.userSequenceNumbers.ContainsKey(destinationIp))
-                {
-                    Dataholder.userSequenceNumbers[destinationIp]++;
-                }
-                else
-                {
-                    Dataholder.userSequenceNumbers.Add(destinationIp, 1);
-                }
-
-                int sequenceNumber = Dataholder.userSequenceNumbers[destinationIp];
 
                 byte[] hashBytes;
                 using (HMACSHA256 hash = new HMACSHA256(Dataholder.userMacKeys[destinationIp]))
