@@ -174,9 +174,9 @@ namespace CriClient
 
                             if (hashBytes.SequenceEqual(mac))
                             {
-                                Console.WriteLine("MAC confirmed!!!");
-                                Console.WriteLine("Cipher text " + parsedMessage[2]);
-                                Console.WriteLine("Plain text " + plainText);
+                                Console.WriteLine("TEXT LOG-> Integrity of the message is confirmed!!!");
+                                Console.WriteLine("TEXT LOG-> Cipher text " + parsedMessage[2]);
+                                Console.WriteLine("TEXT LOG-> Plain text " + plainText);
                             }
                             else
                             {
@@ -669,7 +669,7 @@ namespace CriClient
                 using (HMACSHA256 hash = new HMACSHA256(Dataholder.userMacKeys[destinationIp]))
                     hashBytes = hash.ComputeHash(BitConverter.GetBytes(sequenceNumber).Concat(Encoding.UTF8.GetBytes(message)).ToArray());
 
-                Console.WriteLine("Sending P2P text message to: {0}, plain:{1}, cipher:{2}", destinationIp, message, Convert.ToBase64String(cipherText));
+                Console.WriteLine("TEXT LOG-> Sending P2P text message to: {0}, plain:{1}, cipher:{2}", destinationIp, message, Convert.ToBase64String(cipherText));
                 string packet = ProtocolCode.Text + "\n" + username + "\n" + Convert.ToBase64String(cipherText) + "\n" + Convert.ToBase64String(hashBytes);
                 SendPacket(false, packet, destinationIp, CLIENT_TCP_PORT);
             }
