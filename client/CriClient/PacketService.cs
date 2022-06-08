@@ -169,12 +169,12 @@ namespace CriClient
 
                                 RSACryptoServiceProvider peerRSA = new RSACryptoServiceProvider();
                                 peerRSA.ImportRSAPublicKey(publicKeyOfPeer, out _);
+                                Dataholder.userPublicKeys[remoteIP] = peerRSA;
+                                
                                 byte[] encryptedNonce = peerRSA.Encrypt(nonce, RSAEncryptionPadding.Pkcs1);
 
                                 string encryptedNoncePacket = ProtocolCode.Handshake + "\nNONCEENC\n" + Convert.ToBase64String(encryptedNonce);
                                 SendPacket(false, encryptedNoncePacket, remoteIP, CLIENT_TCP_PORT);
-                                
-                                Dataholder.userPublicKeys[remoteIP] = peerRSA;
                             }
                             else if (parsedMessage[1].Equals("NONCEENC"))
                             {
@@ -201,9 +201,9 @@ namespace CriClient
                                 byte[] masterSecretBytes = masterSecret.GetBytes(16);
                                 byte[] encryptedMasterSecret = Dataholder.userPublicKeys[remoteIP].Encrypt(masterSecretBytes, RSAEncryptionPadding.Pkcs1);
                                 string masterSecretPacket = ProtocolCode.Handshake + "\nMASTERSECRET\n" + Convert.ToBase64String(encryptedMasterSecret);
-                                SendPacket(false, masterSecretPacket, remoteIP, CLIENT_TCP_PORT);
-
                                 Dataholder.userMasterSecrets[remoteIP] = masterSecretBytes;
+                                
+                                SendPacket(false, masterSecretPacket, remoteIP, CLIENT_TCP_PORT);
                             }
                             else if (parsedMessage[1].Equals("INVALIDNONCE"))
                             {
