@@ -43,7 +43,7 @@ namespace CriClient
                     {
                         LoggedinUsername = uname;
                         Dataholder.loggedInUserName = uname;
-                        afterLogin();
+                        AfterLogin();
                         continue;
                     }
                     else
@@ -59,7 +59,7 @@ namespace CriClient
             }
         }
 
-        public static void afterLogin()
+        public static void AfterLogin()
         {
             PacketService.StartTcpListen();
             while (true)
@@ -155,8 +155,6 @@ namespace CriClient
                 File.WriteAllText(CLIENT_PRIVATE_KEY_FILE_PATH, privateKey);
 
                 Dataholder.ClientRSA = rsa;
-                Dataholder.Base64EncodedPrivateKey = publicKey;
-                Dataholder.Base64EncodedPublicKey = privateKey;
             }
             else
             {
@@ -167,12 +165,10 @@ namespace CriClient
                 byte[] publicKeyBytes = Convert.FromBase64String(publicKey);
 
                 RSA rsa = RSA.Create();
-                rsa.ImportRSAPrivateKey(privateKeyBytes, out _);
                 rsa.ImportRSAPublicKey(publicKeyBytes, out _);
+                rsa.ImportRSAPrivateKey(privateKeyBytes, out _);
                 
                 Dataholder.ClientRSA = rsa;
-                Dataholder.Base64EncodedPrivateKey = publicKey;
-                Dataholder.Base64EncodedPublicKey = privateKey;
             }
         }
 

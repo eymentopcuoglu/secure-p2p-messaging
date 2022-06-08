@@ -19,6 +19,7 @@
         public static ProtocolCode GroupSearch { get { return new ProtocolCode("08"); } }
         public static ProtocolCode GroupText { get { return new ProtocolCode("09"); } }
         public static ProtocolCode CAPublicKey { get { return new ProtocolCode("10"); } }
+        public static ProtocolCode Handshake { get { return new ProtocolCode("11"); } }
 
         public override string ToString()
         {

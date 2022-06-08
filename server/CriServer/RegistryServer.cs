@@ -157,7 +157,8 @@ namespace CriServer
         {
             string base64EncodedPublicKey = payload[2];
             
-            byte[] certificate = _rsa.SignData(Convert.FromBase64String(base64EncodedPublicKey), HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+            byte[] certificate = _rsa.SignData(Convert.FromBase64String(base64EncodedPublicKey), HashAlgorithmName.SHA256,  RSASignaturePadding.Pkcs1);
+            
             string base64EncodedCertificate = Convert.ToBase64String(certificate);
             
             return _userService.RegisterUser(payload[0], payload[1], base64EncodedCertificate);

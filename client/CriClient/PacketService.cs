@@ -56,7 +56,7 @@ namespace CriClient
                     bytes.Add((byte) i);
                 }
 
-                string dataRead = System.Text.Encoding.UTF8.GetString(bytes.ToArray());
+                string dataRead = Encoding.UTF8.GetString(bytes.ToArray());
                 stream.Close();
                 return dataRead;
             }
@@ -124,6 +124,8 @@ namespace CriClient
                         incomingStream.Read(incomingBuffer, 0, incomingBuffer.Length);
                         string messageReceived = Encoding.UTF8.GetString(incomingBuffer.Select(b => b).Where(b => b != 0).ToArray());
 
+                        string remoteIP = client.Client.RemoteEndPoint.ToString();
+
                         string[] parsedMessage = messageReceived.Split("\n");
                         if (ProtocolCode.Text.Equals(parsedMessage[0]))
                         {
@@ -132,7 +134,7 @@ namespace CriClient
                         }
                         else if (ProtocolCode.Chat.Equals(parsedMessage[0]))
                         {
-                            string response = RespondToChatRequest(client.Client.RemoteEndPoint.ToString());
+                            string response = RespondToChatRequest(remoteIP);
                             byte[] data = Encoding.UTF8.GetBytes(response);
                             incomingStream.Write(data, 0, data.Length);
                         }
@@ -141,6 +143,78 @@ namespace CriClient
                             Console.WriteLine("Incoming group message from {0}@{1}", parsedMessage[2], parsedMessage[1]);
                             Console.WriteLine(parsedMessage[3]);
                             Console.WriteLine();
+                        }
+                        else if (ProtocolCode.Handshake.Equals(parsedMessage[0]))
+                        {
+                            if (parsedMessage[1].Equals("INIT"))
+                            {
+                                byte[] publicKeyOfPeer = Convert.FromBase64String(parsedMessage[2]);
+                                RSACryptoServiceProvider peerRSA = new RSACryptoServiceProvider();
+                                peerRSA.ImportRSAPublicKey(publicKeyOfPeer, out _);
+                                Dataholder.userPublicKeys[remoteIP] = peerRSA;
+                                
+                                int nonce = new Random().Next();
+                                Dataholder.userNonces[remoteIP] = BitConverter.GetBytes(nonce);
+
+                                string noncePacket = ProtocolCode.Handshake + "\nNONCE\n" + nonce + "\n" + Convert.ToBase64String(Dataholder.ClientRSA.ExportRSAPublicKey());
+                                SendPacket(false, noncePacket, remoteIP, CLIENT_TCP_PORT);
+                            }
+                            else if (parsedMessage[1].Equals("NONCE"))
+                            {
+                                byte[] nonce = Convert.FromBase64String(parsedMessage[2]);
+                                byte[] publicKeyOfPeer = Convert.FromBase64String(parsedMessage[3]);
+
+                                RSACryptoServiceProvider peerRSA = new RSACryptoServiceProvider();
+                                peerRSA.ImportRSAPublicKey(publicKeyOfPeer, out _);
+                                byte[] encryptedNonce = peerRSA.Encrypt(nonce, RSAEncryptionPadding.Pkcs1);
+
+                                string encryptedNoncePacket = ProtocolCode.Handshake + "\nNONCEENC\n" + Convert.ToBase64String(encryptedNonce);
+                                SendPacket(false, encryptedNoncePacket, remoteIP, CLIENT_TCP_PORT);
+                                
+                                Dataholder.userPublicKeys[remoteIP] = peerRSA;
+                            }
+                            else if (parsedMessage[1].Equals("NONCEENC"))
+                            {
+                                byte[] encryptedNonce = Convert.FromBase64String(parsedMessage[2]);
+
+                                byte[] nonce = Dataholder.ClientRSA.Decrypt(encryptedNonce, RSAEncryptionPadding.Pkcs1);
+
+                                if (nonce.SequenceEqual(Dataholder.userNonces[remoteIP]))
+                                {
+                                    string nonceAckPacket = ProtocolCode.Handshake + "\nNONCEACK";
+                                    SendPacket(false, nonceAckPacket, remoteIP, CLIENT_TCP_PORT);
+                                }
+                                else
+                                {
+                                    string nonceInvalidPacket = ProtocolCode.Handshake + "\nINVALIDNONCE";
+                                    SendPacket(false, nonceInvalidPacket, remoteIP, CLIENT_TCP_PORT);
+                                }
+                            }
+                            else if (parsedMessage[1].Equals("NONCEACK"))
+                            {
+                                byte[] nonce = Dataholder.userNonces[remoteIP];
+                                
+                                Rfc2898DeriveBytes masterSecret = new Rfc2898DeriveBytes(nonce, nonce, 100);
+                                byte[] masterSecretBytes = masterSecret.GetBytes(16);
+                                byte[] encryptedMasterSecret = Dataholder.userPublicKeys[remoteIP].Encrypt(masterSecretBytes, RSAEncryptionPadding.Pkcs1);
+                                string masterSecretPacket = ProtocolCode.Handshake + "\nMASTERSECRET\n" + Convert.ToBase64String(encryptedMasterSecret);
+                                SendPacket(false, masterSecretPacket, remoteIP, CLIENT_TCP_PORT);
+
+                                Dataholder.userMasterSecrets[remoteIP] = masterSecretBytes;
+                            }
+                            else if (parsedMessage[1].Equals("INVALIDNONCE"))
+                            {
+                                Console.WriteLine("Invalid nonce received from {0}", remoteIP);
+                            }
+                            else if (parsedMessage[1].Equals("MASTERSECRET"))
+                            {
+                                byte[] masterSecret = Convert.FromBase64String(parsedMessage[2]);
+                                
+                                Dataholder.userMasterSecrets[remoteIP] = masterSecret;
+                            }
+
+                            isTextAvailable = true;
+                            lastTextMessage = parsedMessage[2];
                         }
 
                         incomingStream.Close();
@@ -304,7 +378,7 @@ namespace CriClient
         {
             if (username.Length <= USERNAME_MAX_LENGTH && password.Length <= PASSWORD_MAX_LENGTH)
             {
-                string packet = ProtocolCode.Register + "\n" + username + "\n" + password + "\n" + Dataholder.Base64EncodedPublicKey;
+                string packet = ProtocolCode.Register + "\n" + username + "\n" + password + "\n" + Convert.ToBase64String(Dataholder.ClientRSA.ExportRSAPublicKey());
                 string answer = SendPacket(false, packet);
                 string[] tokenizedanswer;
                 int counter = 0;
@@ -329,7 +403,7 @@ namespace CriClient
                                                                 RSASignaturePadding.Pkcs1);
 
                     if (isValid)
-                        return new Response() { IsSuccessful = true, MessageToUser = "Registered Successfully" };
+                        return new Response() { IsSuccessful = true, MessageToUser = "Certificate is valid!!! Registered Successfully!" };
                     else
                         return new Response() { IsSuccessful = false, MessageToUser = "Certificate can not be verified" };
                 }
@@ -448,8 +522,10 @@ namespace CriClient
             Response searchanswer = Search(username);
             if (searchanswer.IsSuccessful)
             {
-                string packet = ProtocolCode.Chat.ToString() + "\n" + username;
                 string destIp = Dataholder.userIPs[username];
+
+
+                string packet = ProtocolCode.Chat + "\n" + username;
                 Console.WriteLine("Sending P2P chat request to: {0}", destIp);
                 string answer = SendPacket(false, packet, destIp, CLIENT_TCP_PORT);
                 string[] tokenizedanswer = answer.Split('\n');
@@ -465,10 +541,14 @@ namespace CriClient
 
                 if (tokenizedanswer[1] == "OK")
                 {
-                    return new Response() { IsSuccessful = true, MessageToUser = "" };
+                    string handshakePacket = ProtocolCode.Handshake + "\nINIT\n" + Convert.ToBase64String(Dataholder.ClientRSA.ExportRSAPublicKey());
+                    Console.WriteLine("Sending handshake request to: {0}", destIp);
+                    SendPacket(false, handshakePacket, destIp, CLIENT_TCP_PORT);
+                    
+                    return new Response() { IsSuccessful = true, MessageToUser = "Handshake request successfully sent!" };
                 }
 
-                return new Response() { IsSuccessful = false, MessageToUser = "Unkown error." };
+                return new Response() { IsSuccessful = false, MessageToUser = "Unknown error." };
             }
             else
             {
@@ -591,6 +671,7 @@ namespace CriClient
             } while (!ProtocolCode.CAPublicKey.Equals(tokenizedanswer[0]) && counter < 2);
 
             string base64EncodedPublicKey = tokenizedanswer[1];
+
             File.WriteAllText(CA_PUBLIC_KEY_FILE_PATH, base64EncodedPublicKey);
 
             byte[] publicKeyBytes = Convert.FromBase64String(base64EncodedPublicKey);
