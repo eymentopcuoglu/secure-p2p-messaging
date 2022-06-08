@@ -131,19 +131,30 @@ namespace CriClient
                         string[] parsedMessage = messageReceived.Split("\n");
                         if (ProtocolCode.Text.Equals(parsedMessage[0]))
                         {
-                            AesCryptoServiceProvider aes = new AesCryptoServiceProvider()
+                            string plainText;
+                            using (Aes aesAlg = Aes.Create())
                             {
-                                Key = Dataholder.userSymmetricKeys[remoteIP],
-                                IV = Dataholder.userIVs[remoteIP],
-                                Mode = CipherMode.CBC,
-                                Padding = PaddingMode.PKCS7
-                            };
+                                aesAlg.Key = Dataholder.userSymmetricKeys[remoteIP];
+                                aesAlg.IV = Dataholder.userIVs[remoteIP];
+                                aesAlg.Mode = CipherMode.CBC;
 
-                            byte[] plainText = aes.DecryptCbc(Convert.FromBase64String(parsedMessage[2]), Dataholder.userIVs[remoteIP]);
+                                ICryptoTransform decryptor = aesAlg.CreateDecryptor(aesAlg.Key, aesAlg.IV);
+
+                                using (MemoryStream msDecrypt = new MemoryStream(Convert.FromBase64String(parsedMessage[2])))
+                                {
+                                    using (CryptoStream csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read))
+                                    {
+                                        using (StreamReader srDecrypt = new StreamReader(csDecrypt))
+                                        {
+                                            plainText = srDecrypt.ReadToEnd();
+                                        }
+                                    }
+                                }
+                            }
 
                             byte[] hashBytes;
                             using (HMACSHA256 hash = new HMACSHA256(Dataholder.userMacKeys[remoteIP]))
-                                hashBytes = hash.ComputeHash(plainText);
+                                hashBytes = hash.ComputeHash(Encoding.UTF8.GetBytes(plainText));
 
                             byte[] mac = Convert.FromBase64String(parsedMessage[3]);
 
@@ -151,7 +162,7 @@ namespace CriClient
                             {
                                 Console.WriteLine("MAC confirmed!!!");
                                 Console.WriteLine("Cipher text " + parsedMessage[2]);
-                                Console.WriteLine("Plain text " + Encoding.UTF8.GetString(plainText));
+                                Console.WriteLine("Plain text " + plainText);
                             }
                             else
                             {
@@ -159,7 +170,7 @@ namespace CriClient
                             }
 
                             isTextAvailable = true;
-                            lastTextMessage = Encoding.UTF8.GetString(plainText);
+                            lastTextMessage = plainText;
                         }
                         else if (ProtocolCode.Chat.Equals(parsedMessage[0]))
                         {
@@ -628,15 +639,28 @@ namespace CriClient
         {
             if (username.Length <= USERNAME_MAX_LENGTH && message.Length <= MESSAGE_MAX_LENGTH)
             {
-                AesCryptoServiceProvider aes = new AesCryptoServiceProvider()
+                byte[] cipherText;
+                using (Aes aesAlg = Aes.Create())
                 {
-                    Key = Dataholder.userSymmetricKeys[destinationIp],
-                    IV = Dataholder.userIVs[destinationIp],
-                    Mode = CipherMode.CBC,
-                    Padding = PaddingMode.PKCS7
-                };
+                    aesAlg.Key = Dataholder.userSymmetricKeys[destinationIp];
+                    aesAlg.IV = Dataholder.userIVs[destinationIp];
+                    aesAlg.Mode = CipherMode.CBC;
 
-                byte[] cipherText = aes.EncryptCbc(Encoding.UTF8.GetBytes(message), Dataholder.userIVs[destinationIp]);
+                    ICryptoTransform encryptor = aesAlg.CreateEncryptor(aesAlg.Key, aesAlg.IV);
+
+                    using (MemoryStream msEncrypt = new MemoryStream())
+                    {
+                        using (CryptoStream csEncrypt = new CryptoStream(msEncrypt, encryptor, CryptoStreamMode.Write))
+                        {
+                            using (StreamWriter swEncrypt = new StreamWriter(csEncrypt))
+                            {
+                                swEncrypt.Write(message);
+                            }
+
+                            cipherText = msEncrypt.ToArray();
+                        }
+                    }
+                }
 
                 byte[] hashBytes;
                 using (HMACSHA256 hash = new HMACSHA256(Dataholder.userMacKeys[destinationIp]))
