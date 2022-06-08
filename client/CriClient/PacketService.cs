@@ -264,7 +264,9 @@ namespace CriClient
                             }
                             else if (parsedMessage[1].Equals("MASTERSECRET"))
                             {
-                                byte[] masterSecret = Convert.FromBase64String(parsedMessage[2]);
+                                byte[] encryptedMasterSecret = Convert.FromBase64String(parsedMessage[2]);
+                                byte[] masterSecret = Dataholder.userPublicKeys[remoteIP].Decrypt(encryptedMasterSecret, RSAEncryptionPadding.Pkcs1);
+
                                 Dataholder.userMasterSecrets[remoteIP] = masterSecret;
 
                                 byte[] macKeyBytes = Rfc2898DeriveBytes.Pbkdf2(masterSecret, masterSecret, 50, HashAlgorithmName.SHA256, 16);
@@ -413,7 +415,7 @@ namespace CriClient
                 return ProtocolCode.Chat + "\nREJECT";
             }
         }
-        
+
         public static Response Register(string username, string password)
         {
             if (username.Length <= USERNAME_MAX_LENGTH && password.Length <= PASSWORD_MAX_LENGTH)
