@@ -240,23 +240,19 @@ namespace CriClient
                             {
                                 byte[] nonce = Dataholder.userNonces[remoteIP];
 
-                                Rfc2898DeriveBytes masterSecret = new Rfc2898DeriveBytes(nonce, nonce, 100);
-                                byte[] masterSecretBytes = masterSecret.GetBytes(16);
-                                byte[] encryptedMasterSecret = Dataholder.userPublicKeys[remoteIP].Encrypt(masterSecretBytes, RSAEncryptionPadding.Pkcs1);
+                                byte[] masterSecret = Rfc2898DeriveBytes.Pbkdf2(nonce, nonce, 500, HashAlgorithmName.SHA256, 16);
+                                byte[] encryptedMasterSecret = Dataholder.userPublicKeys[remoteIP].Encrypt(masterSecret, RSAEncryptionPadding.Pkcs1);
                                 string masterSecretPacket = ProtocolCode.Handshake + "\nMASTERSECRET\n" + Convert.ToBase64String(encryptedMasterSecret);
-                                Dataholder.userMasterSecrets[remoteIP] = masterSecretBytes;
+                                Dataholder.userMasterSecrets[remoteIP] = masterSecret;
                                 Console.WriteLine("Master secret key is created!");
 
-                                Rfc2898DeriveBytes macKey = new Rfc2898DeriveBytes(masterSecretBytes, masterSecretBytes, 50);
-                                byte[] macKeyBytes = macKey.GetBytes(16);
+                                byte[] macKeyBytes = Rfc2898DeriveBytes.Pbkdf2(masterSecret, masterSecret, 50, HashAlgorithmName.SHA256, 16);
                                 Dataholder.userMacKeys[remoteIP] = macKeyBytes;
 
-                                Rfc2898DeriveBytes IV = new Rfc2898DeriveBytes(masterSecretBytes, masterSecretBytes, 100);
-                                byte[] IVBytes = IV.GetBytes(16);
+                                byte[] IVBytes = Rfc2898DeriveBytes.Pbkdf2(masterSecret, masterSecret, 100, HashAlgorithmName.SHA256, 16);
                                 Dataholder.userIVs[remoteIP] = IVBytes;
 
-                                Rfc2898DeriveBytes symmetricKey = new Rfc2898DeriveBytes(masterSecretBytes, masterSecretBytes, 150);
-                                byte[] symmetricKeyBytes = symmetricKey.GetBytes(16);
+                                byte[] symmetricKeyBytes = Rfc2898DeriveBytes.Pbkdf2(masterSecret, masterSecret, 150, HashAlgorithmName.SHA256, 16);
                                 Dataholder.userSymmetricKeys[remoteIP] = symmetricKeyBytes;
 
                                 Console.WriteLine("NONCE ACKNOWLEDGED and master secret key is sent!");
@@ -271,16 +267,13 @@ namespace CriClient
                                 byte[] masterSecret = Convert.FromBase64String(parsedMessage[2]);
                                 Dataholder.userMasterSecrets[remoteIP] = masterSecret;
 
-                                Rfc2898DeriveBytes macKey = new Rfc2898DeriveBytes(masterSecret, masterSecret, 50);
-                                byte[] macKeyBytes = macKey.GetBytes(16);
+                                byte[] macKeyBytes = Rfc2898DeriveBytes.Pbkdf2(masterSecret, masterSecret, 50, HashAlgorithmName.SHA256, 16);
                                 Dataholder.userMacKeys[remoteIP] = macKeyBytes;
 
-                                Rfc2898DeriveBytes IV = new Rfc2898DeriveBytes(masterSecret, masterSecret, 100);
-                                byte[] IVBytes = IV.GetBytes(16);
+                                byte[] IVBytes = Rfc2898DeriveBytes.Pbkdf2(masterSecret, masterSecret, 100, HashAlgorithmName.SHA256, 16);
                                 Dataholder.userIVs[remoteIP] = IVBytes;
 
-                                Rfc2898DeriveBytes symmetricKey = new Rfc2898DeriveBytes(masterSecret, masterSecret, 150);
-                                byte[] symmetricKeyBytes = symmetricKey.GetBytes(16);
+                                byte[] symmetricKeyBytes = Rfc2898DeriveBytes.Pbkdf2(masterSecret, masterSecret, 150, HashAlgorithmName.SHA256, 16);
                                 Dataholder.userSymmetricKeys[remoteIP] = symmetricKeyBytes;
                                 Console.WriteLine("Master secret key received and proccessed!");
                             }
